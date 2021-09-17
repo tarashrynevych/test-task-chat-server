@@ -9,21 +9,31 @@ const io = new Server(
     }    
 );
 
-const usersList = [];
+let usersList = [];
 
 io.on('connection', (socket) => {
-    socket.on('new message', (data) => {
-      socket.emit('new message', {
-        username: socket.username,
-        message: data
-      });
+    socket.on('new message', (message) => {
+      const newMessage = {
+        userName: socket.userName,
+        userId: socket.id,
+        date: new Date(),
+        message
+      };
+
+      io.emit('new message', newMessage);
     });
   
     socket.on('add user', (name) => {
+      socket.userName = name;
       const newUser = { id: socket.id, name }
-      usersList.push(newUser);
-      console.log('usersList', usersList);
+      usersList = [...usersList, newUser];
 
-      socket.emit('users list', usersList);
+      io.emit('users list updated', usersList);
+    });
+
+    socket.on('disconnect', () => {
+      usersList = usersList.filter((user) => user.id !== socket.id)
+
+      socket.broadcast.emit('users list updated', usersList);
     });
   });
